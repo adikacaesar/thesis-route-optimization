@@ -5,6 +5,7 @@ from src.algorithms.greedy import greedy_nearest_feasible, greedy_timewindow_awa
 from src.algorithms.ga.ga_core import run_ga, GAConfig
 from src.algorithms.hybrid.ga_physarum import run_hybrid_ga_physarum, HybridConfig
 from src.algorithms.physarum.physarum_core import PhysarumConfig
+from src.algorithms.physarum.oscillatory_pruning import PruneConfig
 from src.eval.logger import save_run_log
 
 
@@ -106,9 +107,9 @@ def main():
     print_schedule(g, ga_res, title="GA best schedule")
 
     # =========================
-    # M4: Hybrid GA + Physarum
+    # M4 + M5: Hybrid GA + Physarum + Oscillatory Pruning
     # =========================
-    print("\n=== M4: Hybrid GA + Physarum (Reweighting) ===")
+    print("\n=== M4+M5: Hybrid GA + Physarum + Oscillatory Pruning (Conservative) ===")
 
     ga_cfg_fast = GAConfig(
         population_size=50,
@@ -132,6 +133,14 @@ def main():
         start_time_min=start_time,
     )
 
+    pr_cfg = PruneConfig(
+        threshold=0.20,
+        amplitude=0.05,
+        omega=0.8,
+        patience=5,
+        min_edges_keep=60,
+    )
+
     hy_route, hy_cost = run_hybrid_ga_physarum(
         base_g=g,
         start_id=start_id,
@@ -140,31 +149,34 @@ def main():
         ga_cfg=ga_cfg_fast,
         phy_cfg=phy_cfg,
         hy_cfg=hy_cfg,
+        pr_cfg=pr_cfg,
     )
 
-    print("\n[Hybrid Result]")
+    print("\n[Hybrid+Pruning Result]")
     print("Best route:", " -> ".join(hy_route))
     print(f"Best base cost: {hy_cost:.2f}")
 
     hy_res = evaluate_route(g, hy_route, start_time_min=start_time, late_penalty=10.0)
-    print_schedule(g, hy_res, title="Hybrid GA+Physarum best schedule")
+    print_schedule(g, hy_res, title="Hybrid GA+Physarum+Pruning best schedule")
 
     # =========================
     # Save run log
     # =========================
     log_text = []
-    log_text.append("=== GA+HYBRID RUN SUMMARY ===")
+    log_text.append("=== GA + HYBRID(+PRUNING) RUN SUMMARY ===")
     log_text.append(f"visit_ids={visit_ids}")
     log_text.append(f"start_time={start_time}")
     log_text.append(f"ga_cfg={ga_cfg}")
+    log_text.append(f"ga_cfg_fast={ga_cfg_fast}")
     log_text.append(f"phy_cfg={phy_cfg}")
     log_text.append(f"hy_cfg={hy_cfg}")
+    log_text.append(f"pr_cfg={pr_cfg}")
     log_text.append(f"best_ga_route={' -> '.join(best_route)}")
     log_text.append(f"best_ga_cost={best_cost:.2f}")
     log_text.append(f"best_hybrid_route={' -> '.join(hy_route)}")
     log_text.append(f"best_hybrid_cost={hy_cost:.2f}")
 
-    path = save_run_log("hybrid_run", "\n".join(log_text))
+    path = save_run_log("hybrid_pruning_run", "\n".join(log_text))
     print(f"\nSaved run log: {path}")
 
 
