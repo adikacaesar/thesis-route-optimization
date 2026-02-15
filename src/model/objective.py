@@ -106,3 +106,25 @@ def fmt_time(m: int) -> str:
     hh = m // 60
     mm = m % 60
     return f"{hh:02d}:{mm:02d}"
+
+def print_schedule(g, result, title: str = "Schedule"):
+    print(f"\n--- {title} ---")
+    header = f"{'POI':<3} {'Name':<10} {'Arr':>5} {'Wait':>4} {'Start':>5} {'Dep':>5} {'Late':>4} {'TW':>13}"
+    print(header)
+    print("-" * len(header))
+
+    for s in result.schedule:
+        poi = g.pois[s.poi_id]
+        tw = f"{fmt_time(poi.open_min)}-{fmt_time(poi.close_min)}"
+        print(
+            f"{s.poi_id:<3} {poi.name[:10]:<10} "
+            f"{fmt_time(s.arrive):>5} {s.wait:>4} "
+            f"{fmt_time(s.start_service):>5} {fmt_time(s.depart):>5} "
+            f"{s.late:>4} {tw:>13}"
+        )
+
+    print("-" * len(header))
+    print(
+        f"Travel={result.total_travel}  Wait={result.total_wait}  "
+        f"Late={result.total_late}  Service={result.total_service}  Cost={result.total_cost:.2f}"
+    )

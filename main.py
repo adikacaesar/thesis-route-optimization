@@ -3,6 +3,8 @@ from src.model.validate import validate_graph, reachable_from
 from src.model.objective import evaluate_route, print_schedule
 from src.algorithms.greedy import greedy_nearest_feasible, greedy_timewindow_aware
 from src.algorithms.ga.ga_core import run_ga, GAConfig
+from src.algorithms.hybrid.ga_physarum import run_hybrid_ga_physarum, HybridConfig
+from src.algorithms.physarum.physarum_core import PhysarumConfig
 from src.eval.logger import save_run_log
 
 
@@ -58,11 +60,9 @@ def main():
     visit_ids = ["B", "C", "D", "E", "F"]
     start_time = 480  # 08:00
 
-    # Greedy travel-only
     route1 = greedy_nearest_feasible(g, start_id, end_id, visit_ids, start_time)
     res1 = evaluate_route(g, route1, start_time_min=start_time, late_penalty=10.0)
 
-    # Greedy time-window aware
     route2 = greedy_timewindow_aware(g, start_id, end_id, visit_ids, start_time, late_penalty=10.0)
     res2 = evaluate_route(g, route2, start_time_min=start_time, late_penalty=10.0)
 
@@ -75,11 +75,11 @@ def main():
     print(f"Travel {res2.total_travel} | Wait {res2.total_wait} | Late {res2.total_late} | Cost {res2.total_cost:.2f}")
 
     # =========================
-    # M3: Genetic Algorithm (GA)
+    # M3: Genetic Algorithm
     # =========================
     print("\n=== M3: Genetic Algorithm (GA) ===")
 
-    cfg = GAConfig(
+    ga_cfg = GAConfig(
         population_size=60,
         generations=150,
         crossover_rate=0.9,
@@ -95,36 +95,76 @@ def main():
         visit_ids=visit_ids,
         start_time_min=start_time,
         late_penalty=10.0,
-        cfg=cfg,
+        cfg=ga_cfg,
     )
 
     print("\n[GA Result]")
     print("Best route:", " -> ".join(best_route))
     print(f"Best cost: {best_cost:.2f}")
 
-    # Schedule detail
     ga_res = evaluate_route(g, best_route, start_time_min=start_time, late_penalty=10.0)
     print_schedule(g, ga_res, title="GA best schedule")
+
+    # =========================
+    # M4: Hybrid GA + Physarum
+    # =========================
+    print("\n=== M4: Hybrid GA + Physarum (Reweighting) ===")
+
+    ga_cfg_fast = GAConfig(
+        population_size=50,
+        generations=80,
+        crossover_rate=0.9,
+        mutation_rate=0.2,
+        tournament_k=3,
+        seed=123,
+    )
+
+    phy_cfg = PhysarumConfig(
+        tau_init=1.0,
+        evap_rate=0.05,
+        deposit_q=2.0,
+        eps=1e-6,
+    )
+
+    hy_cfg = HybridConfig(
+        outer_iters=8,
+        late_penalty=10.0,
+        start_time_min=start_time,
+    )
+
+    hy_route, hy_cost = run_hybrid_ga_physarum(
+        base_g=g,
+        start_id=start_id,
+        end_id=end_id,
+        visit_ids=visit_ids,
+        ga_cfg=ga_cfg_fast,
+        phy_cfg=phy_cfg,
+        hy_cfg=hy_cfg,
+    )
+
+    print("\n[Hybrid Result]")
+    print("Best route:", " -> ".join(hy_route))
+    print(f"Best base cost: {hy_cost:.2f}")
+
+    hy_res = evaluate_route(g, hy_route, start_time_min=start_time, late_penalty=10.0)
+    print_schedule(g, hy_res, title="Hybrid GA+Physarum best schedule")
 
     # =========================
     # Save run log
     # =========================
     log_text = []
-    log_text.append("=== GA RUN SUMMARY ===")
+    log_text.append("=== GA+HYBRID RUN SUMMARY ===")
     log_text.append(f"visit_ids={visit_ids}")
     log_text.append(f"start_time={start_time}")
-    log_text.append(f"late_penalty=10.0")
-    log_text.append(f"cfg={cfg}")
-    log_text.append(f"best_route={' -> '.join(best_route)}")
-    log_text.append(f"best_cost={best_cost:.2f}")
-    log_text.append(
-        f"travel={ga_res.total_travel} "
-        f"wait={ga_res.total_wait} "
-        f"late={ga_res.total_late} "
-        f"service={ga_res.total_service}"
-    )
+    log_text.append(f"ga_cfg={ga_cfg}")
+    log_text.append(f"phy_cfg={phy_cfg}")
+    log_text.append(f"hy_cfg={hy_cfg}")
+    log_text.append(f"best_ga_route={' -> '.join(best_route)}")
+    log_text.append(f"best_ga_cost={best_cost:.2f}")
+    log_text.append(f"best_hybrid_route={' -> '.join(hy_route)}")
+    log_text.append(f"best_hybrid_cost={hy_cost:.2f}")
 
-    path = save_run_log("ga_run", "\n".join(log_text))
+    path = save_run_log("hybrid_run", "\n".join(log_text))
     print(f"\nSaved run log: {path}")
 
 

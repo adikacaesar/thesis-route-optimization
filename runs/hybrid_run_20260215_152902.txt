@@ -1,0 +1,10 @@
+=== GA+HYBRID RUN SUMMARY ===
+visit_ids=['B', 'C', 'D', 'E', 'F']
+start_time=480
+ga_cfg=GAConfig(population_size=60, generations=150, crossover_rate=0.9, mutation_rate=0.2, tournament_k=3, seed=123)
+phy_cfg=PhysarumConfig(tau_init=1.0, evap_rate=0.05, deposit_q=2.0, eps=1e-06)
+hy_cfg=HybridConfig(outer_iters=8, late_penalty=10.0, start_time_min=480)
+best_ga_route=A -> E -> C -> B -> F -> D -> J
+best_ga_cost=44.00
+best_hybrid_route=A -> E -> C -> B -> F -> D -> J
+best_hybrid_cost=44.00

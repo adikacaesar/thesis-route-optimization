@@ -1,0 +1,8 @@
+=== GA RUN SUMMARY ===
+visit_ids=['B', 'C', 'D', 'E', 'F']
+start_time=480
+late_penalty=10.0
+cfg=GAConfig(population_size=60, generations=150, crossover_rate=0.9, mutation_rate=0.2, tournament_k=3, seed=123)
+best_route=A -> E -> C -> B -> F -> D -> J
+best_cost=44.00
+travel=44 wait=0 late=0 service=225
